@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .form-section, .list-section {
+            flex: 1;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .delete-btn:hover {
+            background-color: #da190b;
+        }
+        .total-value {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inventory Management System</h1>
+    
+    <div class="container">
+        <div class="form-section">
+            <h2>Add New Product</h2>
+            <form id="productForm">
+                <input type="text" id="productName" placeholder="Product Name" required>
+                <input type="number" id="quantity" placeholder="Quantity" required min="0">
+                <input type="number" id="price" placeholder="Price" required min="0" step="0.01">
+                <button type="submit">Add Product</button>
+            </form>
+        </div>
+        
+        <div class="list-section">
+            <h2>Inventory List</h2>
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="total-value" id="totalValue"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize inventory from localStorage or empty array
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+
+        function saveInventory() {
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+        }
+
+        function addProduct(event) {
+            event.preventDefault();
+            const productName = document.getElementById('productName').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const price = parseFloat(document.getElementById('price').value);
+
+            const newProduct = {
+                id: uuid.v4(),
+                name: productName,
+                quantity: quantity,
+                price: price
+            };
+
+            inventory.push(newProduct);
+            saveInventory();
+            displayInventory();
+            event.target.reset();
+        }
+
+        function updateProduct(id, newQuantity) {
+            const product = inventory.find(p => p.id === id);
+            if (product) {
+                product.quantity = parseInt(newQuantity);
+                saveInventory();
+                displayInventory();
+            }
+        }
+
+        function deleteProduct(id) {
+            inventory = inventory.filter(product => product.id !== id);
+            saveInventory();
+            displayInventory();
+        }
+
+        function calculateTotalValue() {
+            return inventory.reduce((total, product) => {
+                return total + (product.quantity * product.price);
+            }, 0).toFixed(2);
+        }
+
+        function displayInventory() {
+            const tableBody = document.querySelector('#inventoryTable tbody');
+            const totalValueElement = document.getElementById('totalValue');
+            
+            tableBody.innerHTML = '';
+            inventory.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>
+                        <input type="number" value="${product.quantity}" 
+                        onchange="updateProduct('${product.id}', this.value)" min="0">
+                    </td>
+                    <td>$${product.price.toFixed(2)}</td>
+                    <td>
+                        <button class="delete-btn" onclick="deleteProduct('${product.id}')">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            totalValueElement.textContent = `Total Inventory Value: $${calculateTotalValue()}`;
+        }
+
+        document.getElementById('productForm').addEventListener('submit', addProduct);
+
+        // Initial display
+        displayInventory();
+    </script>
+</body>
+</html>
